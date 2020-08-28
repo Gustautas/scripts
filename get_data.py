@@ -1,10 +1,12 @@
 import json
+import pickle
 import subprocess
 from shutil import copy, copytree
 import os
 import pandas as pd
 import fileinput
 import pymatgen as pmg
+import numpy as np
 
 
 class Analazer:
@@ -35,7 +37,7 @@ class Analazer:
                 self.P_s.append(site)
             elif str(site.specie) == 'O':
                 self.O_s.append(site)
-        print('# of Na1:', len(self.Na1_s),'\n# of Na2:', len(self.Na2_s))
+        #print('# of Na1:', len(self.Na1_s),'\n# of Na2:', len(self.Na2_s))
         self.separated_species = {'Na1':self.Na1_s, 'Na2':self.Na2_s, 'Ti':self.Ti_s, 'Mn':self.Mn_s, 'P':self.P_s, 'O':self.O_s}
 
 
@@ -94,14 +96,28 @@ names = configs['configname']
 
 
 Dict = {}
-for name in names[1:2]:
+for name in names:
     calc_dir = "../training_data/"+name+"/calctype.default/run.final"
     Dict[name]={}
     Dict[name]['x']= float(configs.loc[names == name, 'comp(a)']*1.5)
     Dict[name]['dU']= float(configs.loc[names == name, 'formation_energy']/2)
     Dict[name]['#_F.U.']= int(configs.loc[names == name, 'scel_size']*2)
-	S = Analazer(calc_dir+"/CONTCAR")
+   
+    S = Analazer(calc_dir+"/CONTCAR")
     Dict[name]['pmg_struct']= S.strc
+    Dict[name]['bonds']={}
+    Dict[name]['bonds']['Na1-O']=S.get_neighbours_dict('Na1','O',r=3.0,coord_n=6,rmin=0.0)
+    Dict[name]['bonds']['Na2-O']=S.get_neighbours_dict('Na2','O',r=5.0,coord_n=10,rmin=0.0)
+    Dict[name]['bonds']['P-O']=S.get_neighbours_dict('P','O',r=3.0,coord_n=4,rmin=0.0)
+    Dict[name]['bonds']['Ti-O']=S.get_neighbours_dict('Ti','O',r=4.0,coord_n=6,rmin=0.0)
+    Dict[name]['bonds']['Mn-O']=S.get_neighbours_dict('Mn','O',r=4.0,coord_n=6,rmin=0.0)
+    Dict[name]['bonds']['Ti-Ti first_near_site']=S.get_neighbours_dict(
+                             'Ti','Ti',r=5.55,coord_n=1,rmin=0.0)
+    Dict[name]['bonds']['Ti-Mn first_near_site']=S.get_neighbours_dict(
+                             'Ti','Mn',r=5.55,coord_n=1,rmin=0.0)
+    Dict[name]['bonds']['Mn-Mn first_near_site']=S.get_neighbours_dict(
+                             'Mn','Mn',r=5.55,coord_n=1,rmin=0.0)
 
-print(Dict)
+with open('data.pkl', 'wb') as file:
+    pickle.dump(Dict, file)
 
