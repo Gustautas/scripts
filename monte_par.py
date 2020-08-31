@@ -5,7 +5,6 @@ import numpy as np
 import copy
 from casm.project import Project
 from mpi4py import MPI
-#import pbs
 
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
